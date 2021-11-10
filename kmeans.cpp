@@ -1,138 +1,339 @@
-#include <ctime>
-#include <fstream>
+// Implementation of the KMeans Algorithm
+// reference: http://mnemstudio.org/clustering-k-means-example-1.htm
+
 #include <iostream>
-#include <sstream>
 #include <vector>
+#include <math.h>
+#include <stdlib.h>
+#include <time.h>
+#include <algorithm>
+#include <fstream>
+#include <ctime>
 
 using namespace std;
 
-struct Point {
-    double x, y;     // coordinates
-    int cluster;     // no default cluster
-    double minDist;  // default infinite distance to nearest cluster
+class Point
+{
+private:
+	int id_point, id_cluster;
+	vector<double> values;
+	int total_values;
+	string name;
 
-    Point() : x(0.0), y(0.0), cluster(-1), minDist(__DBL_MAX__) {}
-    Point(double x, double y) : x(x), y(y), cluster(-1), minDist(__DBL_MAX__) {}
+public:
+	Point(int id_point, vector<double>& values, string name = "")
+	{
+		this->id_point = id_point;
+		total_values = values.size();
 
-    /**
-     * Computes the (square) euclidean distance between this point and another
-     */
-    double distance(Point p) {
-        return (p.x - x) * (p.x - x) + (p.y - y) * (p.y - y);
-    }
+		for(int i = 0; i < total_values; i++)
+			this->values.push_back(values[i]);
+
+		this->name = name;
+		id_cluster = -1;
+	}
+
+	int getID()
+	{
+		return id_point;
+	}
+
+	void setCluster(int id_cluster)
+	{
+		this->id_cluster = id_cluster;
+	}
+
+	int getCluster()
+	{
+		return id_cluster;
+	}
+
+	double getValue(int index)
+	{
+		return values[index];
+	}
+
+	int getTotalValues()
+	{
+		return total_values;
+	}
+
+	void addValue(double value)
+	{
+		values.push_back(value);
+	}
+
+	string getName()
+	{
+		return name;
+	}
 };
 
-/**
- * Reads in the data.csv file into a vector of points
- * @return vector of points
- *
- */
-vector<Point> readcsv() {
-    vector<Point> points;
-    string line;
-    ifstream file("IRIS.csv");
+class Cluster
+{
+private:
+	int id_cluster;
+	vector<double> central_values;
+	vector<Point> points;
 
-    while (getline(file, line)) {
-        stringstream lineStream(line);
-        string bit;
-        double x, y, w, z;
-        string r;
-        getline(lineStream, bit, ',');
-        x = atof(bit.c_str());
-        getline(lineStream, bit, ',');
-        y = atof(bit.c_str());
-        getline(lineStream, bit, ',');
-        w = atof(bit.c_str());
-        getline(lineStream, bit, ',');
-        z = atof(bit.c_str());
-        getline(lineStream, bit, ',');
-        r = bit;
-        cout << r << endl;
-        points.push_back(Point(x, y));
-    }
-    return points;
-}
+public:
+	Cluster(int id_cluster, Point point)
+	{
+		this->id_cluster = id_cluster;
 
-/**
- * Perform k-means clustering
- * @param points - pointer to vector of points
- * @param epochs - number of k means iterations
- * @param k - the number of initial centroids
- */
-void kMeansClustering(vector<Point>* points, int epochs, int k) {
-    int n = points->size();
+		int total_values = point.getTotalValues();
 
-    // Randomly initialise centroids
-    // The index of the centroid within the centroids vector
-    // represents the cluster label.
-    vector<Point> centroids;
-    srand(time(0));
-    for (int i = 0; i < k; ++i) {
-        centroids.push_back(points->at(rand() % n));
-    }
+		for(int i = 0; i < total_values; i++)
+			central_values.push_back(point.getValue(i));
 
-    for (int i = 0; i < epochs; ++i) {
-        // For each centroid, compute distance from centroid to each point
-        // and update point's cluster if necessary
-        for (vector<Point>::iterator c = begin(centroids); c != end(centroids);
-             ++c) {
-            int clusterId = c - begin(centroids);
+		points.push_back(point);
+	}
 
-            for (vector<Point>::iterator it = points->begin();
-                 it != points->end(); ++it) {
-                Point p = *it;
-                double dist = c->distance(p);
-                if (dist < p.minDist) {
-                    p.minDist = dist;
-                    p.cluster = clusterId;
-                }
-                *it = p;
-            }
-        }
+	void addPoint(Point point)
+	{
+		points.push_back(point);
+	}
 
-        // Create vectors to keep track of data needed to compute means
-        vector<int> nPoints;
-        vector<double> sumX, sumY;
-        for (int j = 0; j < k; ++j) {
-            nPoints.push_back(0);
-            sumX.push_back(0.0);
-            sumY.push_back(0.0);
-        }
+	bool removePoint(int id_point)
+	{
+		int total_points = points.size();
 
-        // Iterate over points to append data to centroids
-        for (vector<Point>::iterator it = points->begin(); it != points->end();
-             ++it) {
-            int clusterId = it->cluster;
-            nPoints[clusterId] += 1;
-            sumX[clusterId] += it->x;
-            sumY[clusterId] += it->y;
+		for(int i = 0; i < total_points; i++)
+		{
+			if(points[i].getID() == id_point)
+			{
+				points.erase(points.begin() + i);
+				return true;
+			}
+		}
+		return false;
+	}
 
-            it->minDist = __DBL_MAX__;  // reset distance
-        }
-        // Compute the new centroids
-        for (vector<Point>::iterator c = begin(centroids); c != end(centroids);
-             ++c) {
-            int clusterId = c - begin(centroids);
-            c->x = sumX[clusterId] / nPoints[clusterId];
-            c->y = sumY[clusterId] / nPoints[clusterId];
-        }
-    }
+	double getCentralValue(int index)
+	{
+		return central_values[index];
+	}
 
-    // Write to csv
-    ofstream myfile;
-    myfile.open("output.csv");
-    myfile << "x,y,c" << endl;
+	void setCentralValue(int index, double value)
+	{
+		central_values[index] = value;
+	}
 
-    for (vector<Point>::iterator it = points->begin(); it != points->end();
-         ++it) {
-        myfile << it->x << "," << it->y << "," << it->cluster << endl;
-    }
-    myfile.close();
-}
+	Point getPoint(int index)
+	{
+		return points[index];
+	}
 
-int main() {
-    vector<Point> points = readcsv();
+	int getTotalPoints()
+	{
+		return points.size();
+	}
 
-    // Run k-means with 100 iterations and for 5 clusters
-    kMeansClustering(&points, 100, 5);
+	int getID()
+	{
+		return id_cluster;
+	}
+};
+
+class KMeans
+{
+private:
+	int K; // number of clusters
+	int total_values, total_points, max_iterations;
+	vector<Cluster> clusters;
+
+	// return ID of nearest center (uses euclidean distance)
+	int getIDNearestCenter(Point point)
+	{
+		double sum = 0.0, min_dist;
+		int id_cluster_center = 0;
+
+		for(int i = 0; i < total_values; i++)
+		{
+			sum += pow(clusters[0].getCentralValue(i) -
+					   point.getValue(i), 2.0);
+		}
+
+		min_dist = sqrt(sum);
+
+		for(int i = 1; i < K; i++)
+		{
+			double dist;
+			sum = 0.0;
+
+			for(int j = 0; j < total_values; j++)
+			{
+				sum += pow(clusters[i].getCentralValue(j) -
+						   point.getValue(j), 2.0);
+			}
+
+			dist = sqrt(sum);
+
+			if(dist < min_dist)
+			{
+				min_dist = dist;
+				id_cluster_center = i;
+			}
+		}
+
+		return id_cluster_center;
+	}
+
+public:
+	KMeans(int K, int total_points, int total_values, int max_iterations)
+	{
+		this->K = K;
+		this->total_points = total_points;
+		this->total_values = total_values;
+		this->max_iterations = max_iterations;
+	}
+
+	void run(vector<Point> & points)
+	{
+		if(K > total_points)
+			return;
+
+		vector<int> prohibited_indexes;
+
+		// choose K distinct values for the centers of the clusters
+		for(int i = 0; i < K; i++)
+		{
+			while(true)
+			{
+				int index_point = rand() % total_points;
+
+				if(find(prohibited_indexes.begin(), prohibited_indexes.end(),
+						index_point) == prohibited_indexes.end())
+				{
+					prohibited_indexes.push_back(index_point);
+					points[index_point].setCluster(i);
+					Cluster cluster(i, points[index_point]);
+					clusters.push_back(cluster);
+					break;
+				}
+			}
+		}
+
+		int iter = 1;
+
+		while(true)
+		{
+			cout << "here " << endl;
+			bool done = true;
+
+			// associates each point to the nearest center
+			for(int i = 0; i < total_points; i++)
+			{
+				int id_old_cluster = points[i].getCluster();
+				int id_nearest_center = getIDNearestCenter(points[i]);
+
+				if(id_old_cluster != id_nearest_center)
+				{
+					if(id_old_cluster != -1)
+						clusters[id_old_cluster].removePoint(points[i].getID());
+
+					points[i].setCluster(id_nearest_center);
+					clusters[id_nearest_center].addPoint(points[i]);
+					done = false;
+				}
+			}
+
+			// recalculating the center of each cluster
+			for(int i = 0; i < K; i++)
+			{
+				for(int j = 0; j < total_values; j++)
+				{
+					int total_points_cluster = clusters[i].getTotalPoints();
+					double sum = 0.0;
+
+					if(total_points_cluster > 0)
+					{
+						for(int p = 0; p < total_points_cluster; p++)
+							sum += clusters[i].getPoint(p).getValue(j);
+						clusters[i].setCentralValue(j, sum / total_points_cluster);
+					}
+				}
+			}
+
+			if(done == true || iter >= max_iterations)
+			{
+				cout << "Break in iteration " << iter << "\n\n";
+				break;
+			}
+
+			iter++;
+		}
+
+		// shows elements of clusters
+		for(int i = 0; i < K; i++)
+		{
+			int total_points_cluster =  clusters[i].getTotalPoints();
+
+			cout << "Cluster " << clusters[i].getID() + 1 << endl;
+			for(int j = 0; j < total_points_cluster; j++)
+			{
+				cout << "Point " << clusters[i].getPoint(j).getID() + 1 << ": ";
+				for(int p = 0; p < total_values; p++)
+					cout << clusters[i].getPoint(j).getValue(p) << " ";
+
+				string point_name = clusters[i].getPoint(j).getName();
+
+				if(point_name != "")
+					cout << "- " << point_name;
+
+				cout << endl;
+			}
+
+			cout << "Cluster values: ";
+
+			for(int j = 0; j < total_values; j++)
+				cout << clusters[i].getCentralValue(j) << " ";
+
+			cout << "\n\n";
+		}
+	}
+};
+
+int main(int argc, char *argv[])
+{
+	srand (time(NULL));
+
+	int total_points, total_values, K, max_iterations, has_name;
+
+	ifstream infile;
+	infile.open(argv[1]);
+
+	infile >> total_points >> total_values >> K >> max_iterations >> has_name;
+
+	vector<Point> points;
+	string point_name;
+
+	for(int i = 0; i < total_points; i++)
+	{
+		vector<double> values;
+
+		for(int j = 0; j < total_values; j++)
+		{
+			double value;
+			infile >> value;
+			values.push_back(value);
+		}
+
+		if(has_name)
+		{
+			infile >> point_name;
+			Point p(i, values, point_name);
+			points.push_back(p);
+		}
+		else
+		{
+			Point p(i, values);
+			points.push_back(p);
+		}
+	}
+
+	KMeans kmeans(K, total_points, total_values, max_iterations);
+	kmeans.run(points);
+
+	return 0;
 }
