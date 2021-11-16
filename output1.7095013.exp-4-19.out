@@ -1,0 +1,40 @@
+File: generated_9999.txt Cores: 1
+Elapsed Time: 0.0858886
+File: generated_9999.txt Cores: 2
+Elapsed Time: 0.0492143
+File: generated_9999.txt Cores: 5
+Elapsed Time: 0.0232384
+File: generated_9999.txt Cores: 10
+Elapsed Time: 0.0155019
+File: generated_9999.txt Cores: 20
+Elapsed Time: 0.0253284
+File: generated_99999.txt Cores: 1
+Elapsed Time: 0.856331
+File: generated_99999.txt Cores: 2
+Elapsed Time: 0.481617
+File: generated_99999.txt Cores: 5
+Elapsed Time: 0.244257
+File: generated_99999.txt Cores: 10
+Elapsed Time: 0.12935
+File: generated_99999.txt Cores: 20
+Elapsed Time: 0.149282
+File: generated_999999.txt Cores: 1
+Elapsed Time: 8.61538
+File: generated_999999.txt Cores: 2
+Elapsed Time: 4.85214
+File: generated_999999.txt Cores: 5
+Elapsed Time: 2.56674
+File: generated_999999.txt Cores: 10
+Elapsed Time: 2.02235
+File: generated_999999.txt Cores: 20
+Elapsed Time: 1.67018
+File: generated_9999999.txt Cores: 1
+Elapsed Time: 87.961
+File: generated_9999999.txt Cores: 2
+Elapsed Time: 51.1888
+File: generated_9999999.txt Cores: 5
+Elapsed Time: 27.2536
+File: generated_9999999.txt Cores: 10
+Elapsed Time: 26.174
+File: generated_9999999.txt Cores: 20
+Elapsed Time: 25.3274
