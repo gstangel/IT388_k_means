@@ -83,7 +83,7 @@ public:
 		this->id_cluster = id_cluster;
 
 		int total_values = point.getTotalValues();
-
+	
 		for(int i = 0; i < total_values; i++)
 			central_values.push_back(point.getValue(i));
 
@@ -99,7 +99,7 @@ public:
 	{
 		int total_points = points.size();
 		
-		//#pragma omp parallel for
+		// #pragma omp parallel for
 		for(int i = 0; i < total_points; i++)
 		{
 			if(points[i].getID() == id_point)
@@ -182,6 +182,10 @@ private:
 	}
 
 public:
+
+	double start;
+	double end;
+
 	KMeans(int K, int total_points, int total_values, int max_iterations)
 	{
 		this->K = K;
@@ -192,6 +196,9 @@ public:
 
 	void run(vector<Point> & points)
 	{
+
+		start = omp_get_wtime();
+
 		if(K > total_points)
 			return;
 
@@ -220,15 +227,15 @@ public:
 
 		while(true)
 		{
-			cout << "here " << endl;
 			bool done = true;
-
 			// associates each point to the nearest center
+			#pragma omp parallel for
 			for(int i = 0; i < total_points; i++)
 			{
 				int id_old_cluster = points[i].getCluster();
 				int id_nearest_center = getIDNearestCenter(points[i]);
 
+				#pragma omp critical
 				if(id_old_cluster != id_nearest_center)
 				{
 					if(id_old_cluster != -1)
@@ -243,6 +250,7 @@ public:
 			// recalculating the center of each cluster
 			for(int i = 0; i < K; i++)
 			{
+				
 				for(int j = 0; j < total_values; j++)
 				{
 					int total_points_cluster = clusters[i].getTotalPoints();
@@ -250,6 +258,7 @@ public:
 
 					if(total_points_cluster > 0)
 					{
+						#pragma omp parallel for
 						for(int p = 0; p < total_points_cluster; p++)
 							sum += clusters[i].getPoint(p).getValue(j);
 						clusters[i].setCentralValue(j, sum / total_points_cluster);
@@ -265,6 +274,8 @@ public:
 
 			iter++;
 		}
+
+		end = omp_get_wtime();
 
 		// shows elements of clusters
 		for(int i = 0; i < K; i++)
@@ -288,8 +299,10 @@ public:
 
 			cout << "Cluster values: ";
 
-			for(int j = 0; j < total_values; j++)
+			#pragma omp parallel for
+			for(int j = 0; j < total_values; j++) {
 				cout << clusters[i].getCentralValue(j) << " ";
+			}
 
 			cout << "\n\n";
 		}
@@ -300,21 +313,24 @@ int main(int argc, char *argv[])
 {
 	srand (time(NULL));
 
-	int total_points, total_values, K, max_iterations, has_name;
+	int total_points, total_values, K, max_iterations, has_name, num_proc, i, j;
 
 	ifstream infile;
 	infile.open(argv[1]);
+	num_proc = atoi(argv[2]);
+	omp_set_num_threads(num_proc);
+
 
 	infile >> total_points >> total_values >> K >> max_iterations >> has_name;
 
 	vector<Point> points;
 	string point_name;
 
-	for(int i = 0; i < total_points; i++)
+	for(i = 0; i < total_points; i++)
 	{
 		vector<double> values;
 
-		for(int j = 0; j < total_values; j++)
+		for(j = 0; j < total_values; j++)
 		{
 			double value;
 			infile >> value;
@@ -336,6 +352,10 @@ int main(int argc, char *argv[])
 
 	KMeans kmeans(K, total_points, total_values, max_iterations);
 	kmeans.run(points);
+	
+	double elapsed = kmeans.end - kmeans.start;
+
+	cout << "Elapsed Time: " << elapsed;
 
 	return 0;
 }
