@@ -10,10 +10,8 @@
 #include <fstream>
 #include <ctime>
 #include <omp.h>
-#include <chrono>
 
 using namespace std;
-using namespace std::chrono;
 
 class Point
 {
@@ -96,11 +94,11 @@ public:
 	{
 		points.push_back(point);
 	}
-	
+
 	bool removePoint(int id_point)
 	{
 		int total_points = points.size();
-		
+
 		for(int i = 0; i < total_points; i++)
 		{
 			if(points[i].getID() == id_point)
@@ -197,9 +195,8 @@ public:
 			return;
 
 		vector<int> prohibited_indexes;
-		auto start = high_resolution_clock::now();
+
 		// choose K distinct values for the centers of the clusters
-		
 		for(int i = 0; i < K; i++)
 		{
 			while(true)
@@ -217,20 +214,15 @@ public:
 				}
 			}
 		}
-		auto stop = high_resolution_clock::now();
-		auto duration = duration_cast<microseconds>(stop - start);
-		cout << "First loop time: " << duration.count() << endl;
-
 
 		int iter = 1;
-		start = high_resolution_clock::now();
+
 		while(true)
 		{
-			cout << "here" << endl;
+			cout << "here " << endl;
 			bool done = true;
 
 			// associates each point to the nearest center
-			
 			for(int i = 0; i < total_points; i++)
 			{
 				int id_old_cluster = points[i].getCluster();
@@ -247,18 +239,9 @@ public:
 				}
 			}
 
-			stop = high_resolution_clock::now();
-			duration = duration_cast<microseconds>(stop - start);
-			cout << "Second loop time: " << duration.count() << endl;
-
-
-			start = high_resolution_clock::now();
 			// recalculating the center of each cluster
-			cout << "num_threads" << omp_get_num_threads << endl;
-			#pragma omp parallel for
 			for(int i = 0; i < K; i++)
 			{
-				cout << omp_get_thread_num << endl;
 				for(int j = 0; j < total_values; j++)
 				{
 					int total_points_cluster = clusters[i].getTotalPoints();
@@ -266,17 +249,12 @@ public:
 
 					if(total_points_cluster > 0)
 					{
-
 						for(int p = 0; p < total_points_cluster; p++)
 							sum += clusters[i].getPoint(p).getValue(j);
 						clusters[i].setCentralValue(j, sum / total_points_cluster);
 					}
 				}
 			}
-
-			stop = high_resolution_clock::now();
-			duration = duration_cast<microseconds>(stop - start);
-			cout << "Third loop time: " << duration.count() << endl;
 
 			if(done == true || iter >= max_iterations)
 			{
@@ -288,32 +266,32 @@ public:
 		}
 
 		// shows elements of clusters
-		// for(int i = 0; i < K; i++)
-		// {
-		// 	int total_points_cluster =  clusters[i].getTotalPoints();
+		for(int i = 0; i < K; i++)
+		{
+			int total_points_cluster =  clusters[i].getTotalPoints();
 
-		// 	cout << "Cluster " << clusters[i].getID() + 1 << endl;
-		// 	for(int j = 0; j < total_points_cluster; j++)
-		// 	{
-		// 		cout << "Point " << clusters[i].getPoint(j).getID() + 1 << ": ";
-		// 		for(int p = 0; p < total_values; p++)
-		// 			cout << clusters[i].getPoint(j).getValue(p) << " ";
+			cout << "Cluster " << clusters[i].getID() + 1 << endl;
+			for(int j = 0; j < total_points_cluster; j++)
+			{
+				cout << "Point " << clusters[i].getPoint(j).getID() + 1 << ": ";
+				for(int p = 0; p < total_values; p++)
+					cout << clusters[i].getPoint(j).getValue(p) << " ";
 
-		// 		string point_name = clusters[i].getPoint(j).getName();
+				string point_name = clusters[i].getPoint(j).getName();
 
-		// 		if(point_name != "")
-		// 			cout << "- " << point_name;
+				if(point_name != "")
+					cout << "- " << point_name;
 
-		// 		cout << endl;
-		// 	}
+				cout << endl;
+			}
 
-		// 	cout << "Cluster values: ";
+			cout << "Cluster values: ";
 
-		// 	for(int j = 0; j < total_values; j++)
-		// 		cout << clusters[i].getCentralValue(j) << " ";
+			for(int j = 0; j < total_values; j++)
+				cout << clusters[i].getCentralValue(j) << " ";
 
-		// 	cout << "\n\n";
-		// }
+			cout << "\n\n";
+		}
 	}
 };
 
@@ -321,15 +299,10 @@ int main(int argc, char *argv[])
 {
 	srand (time(NULL));
 
-	omp_set_num_threads(atoi(argv[1]));
-	cout << atoi(argv[1]) << endl;
-
-	cout << omp_get_num_threads << endl;
-
 	int total_points, total_values, K, max_iterations, has_name;
 
 	ifstream infile;
-	infile.open(argv[2]);
+	infile.open(argv[1]);
 
 	infile >> total_points >> total_values >> K >> max_iterations >> has_name;
 
@@ -338,6 +311,7 @@ int main(int argc, char *argv[])
 
 	for(int i = 0; i < total_points; i++)
 	{
+		cout << "here" << endl;
 		vector<double> values;
 
 		for(int j = 0; j < total_values; j++)
